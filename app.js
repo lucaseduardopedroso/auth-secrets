@@ -1,9 +1,12 @@
 //jshint esversion:6
+//Environment Variables to Keep Secrets Safe
+require('dotenv').config();
 const express = require("express");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
 const { MongoTopologyClosedError } = require("mongodb");
 const app = express();
+const encrypt = require("mongoose-encryption");
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -11,10 +14,13 @@ app.set('view engine', 'ejs');
 
 mongoose.connect("mongodb://localhost:27017/userDB");
 
-const userSchema = {
+const userSchema = new mongoose.Schema ({
     email: String,
     password: String
-};
+});
+
+// Level 2 - Database Encryption
+userSchema.plugin(encrypt, {secret: process.env.SECRET, encryptedFields: ["password"]});
 
 const User = new mongoose.model("User", userSchema);
 
