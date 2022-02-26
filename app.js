@@ -9,6 +9,10 @@ const app = express();
 /* const encrypt = require("mongoose-encryption"); */
 const md5 = require("md5");
 
+const bcrypt = require("bcrypt");
+// Bcrypt salting
+const saltRounds = 10;
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set('view engine', 'ejs');
@@ -38,11 +42,15 @@ app.get("/register", function(req, res){
 });
 
 app.post("/register", function(req, res){
-    //Level 1 - Register Users with Username and Password
+    // Level 4 - Salting and Hashing Passwords with bcrypt
+    bcrypt.hash(req.body.password, saltRounds, function(err, hash) {
+        
+        //Level 1 - Register Users with Username and Password
     const newUser = User({
         email: req.body.username,
-        // Level 3 - Hashing Passwords
-        password: md5(req.body.password)
+        /* // Level 3 - Hashing Passwords
+        password: md5(req.body.password) */
+        password: hash
     });
 
     newUser.save(function(err){
@@ -53,12 +61,15 @@ app.post("/register", function(req, res){
             console.log(err);
         }
     });
+
+    });
 });
 
 app.post("/login", function(req, res){
     const username = req.body.username;
-    //Hashing Passwords
-    const password = md5(req.body.password);
+   /*  //Hashing Passwords
+    const password = md5(req.body.password); */
+    const password = req.body.password;
 
     //Level 1
     User.findOne({email: username}, function(err, foundUser){
@@ -66,9 +77,12 @@ app.post("/login", function(req, res){
             console.log(err);
         } else {
             if(foundUser){
-                if(foundUser.password === password){
-                    res.render("secrets");
-                }
+                // Level 4 - Load hash from your password DB.
+                bcrypt.compare(password, foundUser.password, function(err, result) {
+                    if(result === true){
+                        res.render("secrets");
+                    }
+                });
             }
         }
     });
